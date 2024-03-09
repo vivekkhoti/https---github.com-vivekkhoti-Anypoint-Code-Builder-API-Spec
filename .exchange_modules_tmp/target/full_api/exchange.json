@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0-SNAPSHOT",
+  "apiVersion": "v1",
+  "descriptorVersion": "1.0.0",
+  "classifier": "raml",
+  "main": "anypoint-code-builder-api-spec.raml",
+  "assetId": "anypoint-code-builder-api-spec",
+  "groupId": "null",
+  "name": "Anypoint Code Builder API Spec"
+}
