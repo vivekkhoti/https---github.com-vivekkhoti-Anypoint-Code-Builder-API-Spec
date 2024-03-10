@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <http:listener-config name="MockingServiceAPI-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="MockingServiceAPI-config" api="resource::org.mule.examples:mocking-service-2-api:1.3.0:raml:zip:MockingServiceAPI.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="MockingServiceAPI-main">
+        <http:listener config-ref="MockingServiceAPI-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="MockingServiceAPI-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="MockingServiceAPI-console">
+        <http:listener config-ref="MockingServiceAPI-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="MockingServiceAPI-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="put:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="put:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="put:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\exchange\assets\(groupId)\(assetId)\v1:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\exchange\assets\(groupId)\(assetId)\v1:MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\manager\apis\(orgId)\(apiId)\(versionId):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\manager\apis\(orgId)\(apiId)\(versionId):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\vcs\projects\(projectId)\(branch):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\vcs\projects\(projectId)\(branch):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\exchange\assets\(groupId)\(assetId)\v1\links\(id):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\exchange\assets\(groupId)\(assetId)\v1\links\(id):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\vcs\projects\(projectId)\(branch)\links\(id):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\vcs\projects\(projectId)\(branch)\links\(id):MockingServiceAPI-config" />
+    </flow>
+    <flow name="delete:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links\(id):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links\(id):MockingServiceAPI-config" />
+    </flow>
+    <flow name="head:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="head:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="head:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="head:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="head:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="head:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="head:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="head:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="options:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="options:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="options:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="options:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="options:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="options:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="options:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="options:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="patch:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="patch:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="patch:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="patch:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="patch:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links\(id):application\json:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="patch:\sources\vcs\projects\(projectId)\(branch)\links\(id):application\json:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="patch:\sources\exchange\assets\(groupId)\(assetId)\v1\links\(id):application\json:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\sources\exchange\assets\(groupId)\(assetId)\v1:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  metadata: {
+    baseUriPath: "/"
+  }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links:MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\sources\exchange\assets\(groupId)\(assetId)\v1\links:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\sources\exchange\assets\(groupId)\(assetId)\v1\links:MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\sources\vcs\projects\(projectId)\(branch)\links:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\sources\vcs\projects\(projectId)\(branch)\links:MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="get:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="get:\sources\manager\apis\(orgId)\(apiId)\(versionId):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  metadata: {
+    baseUriPath: "/"
+  }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\status:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  services: [
+    {
+      service: {
+        label: "Mocking Service",
+        version: "2.0.0"
+      },
+      dependencies: [
+        {
+          label: "Some service 1",
+          url: "http://someservice1.com"
+        }
+      ],
+      info: [
+        [
+          "foo", 
+          "bar"
+        ]
+      ]
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\sources\vcs\projects\(projectId)\(branch):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  metadata: {
+    baseUriPath: "/"
+  }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\sources\exchange\assets\(groupId)\(assetId)\v1\links\(id):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links\(id):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\sources\vcs\projects\(projectId)\(branch)\links\(id):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\links\(id)\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="post:\links\(id)\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="post:\sources\manager\apis\(orgId)\(apiId)\(versionId)\links:application\json:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\sources\exchange\assets\(groupId)\(assetId)\v1\links:application\json:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\sources\vcs\projects\(projectId)\(branch)\links:application\json:MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  id: "707c4cb0-8a8f-4b32-86a2-16c75a1323e3",
+  expirationDate: "2022-01-01",
+  creationUser: "7df175af-9ed3-4489-b255-f270b0d03ff5",
+  creationDate: "2021-04-01T13:50:08Z"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="groupId">attributes.uriParams.'groupId'</ee:set-variable>
+                <ee:set-variable variableName="assetId">attributes.uriParams.'assetId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="post:\sources\exchange\assets\(groupId)\(assetId)\v1\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="post:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="projectId">attributes.uriParams.'projectId'</ee:set-variable>
+                <ee:set-variable variableName="branch">attributes.uriParams.'branch'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="post:\sources\vcs\projects\(projectId)\(branch)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+    <flow name="post:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orgId">attributes.uriParams.'orgId'</ee:set-variable>
+                <ee:set-variable variableName="apiId">attributes.uriParams.'apiId'</ee:set-variable>
+                <ee:set-variable variableName="versionId">attributes.uriParams.'versionId'</ee:set-variable>
+                <ee:set-variable variableName="resource">attributes.uriParams.'resource'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="post:\sources\manager\apis\(orgId)\(apiId)\(versionId)\m\(resource):MockingServiceAPI-config" />
+    </flow>
+</mule>
